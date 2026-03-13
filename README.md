@@ -14,11 +14,11 @@ Derived from [@chaeco/logger](https://github.com/chaeco/logger) with the filesys
 ## Features
 
 - **Log levels**: `debug` / `info` / `warn` / `error` / `silent` — adjustable at runtime
-- **Browser colour output**: Uses `%c` CSS syntax to colourise each level — no ANSI codes, no chalk
-- **Caller location tracking**: Automatically parses the call stack to display the source file and line number
-- **Child loggers**: `logger.child('name')` creates a namespaced child instance that inherits parent config
-- **Event hooks**: Listen to internal events such as `levelChange`
-- **Custom formatter**: Receives a full `LogEntry` object for complete control over output format
+- **Browser colour output**: Uses native `%c` CSS syntax to colourise each level — no ANSI codes, no chalk
+- **Caller location tracking**: Parses the Error call stack (LRU-cached) to display the source file and line number
+- **Child loggers**: `logger.child('name')` creates a namespaced child that inherits parent config
+- **Event hooks**: `on` / `off` listeners for internal events such as `levelChange`
+- **Custom formatter**: `format.formatter` receives a full `LogEntry` for complete control over output
 - **Multiple build outputs**: ESM / CJS / UMD with bundled `.d.ts` declarations — zero runtime dependencies
 
 ## Installation
@@ -35,9 +35,12 @@ npm install github:chaeco/lite-log
 import logger from '@chaeco/lite-log'
 
 logger.info('App started')
-logger.debug('Debug info', { userId: 123 })
-logger.warn('Something to watch')
-logger.error('An error occurred', new Error('oops'))
+logger.debug('Fetched user', { userId: 123 })
+logger.warn('Slow response detected')
+logger.error('Request failed', new Error('timeout'))
+
+// Pass an Error directly — message is extracted automatically
+logger.error(new Error('unexpected state'))
 ```
 
 ## Create a Standalone Logger
@@ -57,43 +60,75 @@ log.info('Payment request', { amount: 100 })
 ## Child Logger
 
 ```ts
+// Inherits level, console, and format from parent
 const httpLog = log.child('http')
 httpLog.debug('GET /api/user 200')
-// Output name: payment:http
+// Output prefix: payment:http
+
+// Override level or format for the child only
+const verboseLog = log.child('debug', { level: 'debug' })
 ```
 
 ## Custom Formatter
 
 ```ts
-import { Logger } from '@chaeco/lite-log'
+import { Logger, LogEntry } from '@chaeco/lite-log'
 
 const log = new Logger({
   name: 'app',
   format: {
-    enabled: true,
-    formatter: (entry) =>
+    formatter: (entry: LogEntry) =>
       `[${entry.level.toUpperCase()}] ${entry.name} — ${entry.message}`,
   },
 })
 ```
 
+When `format.formatter` is provided, it **replaces the entire default output**. The function receives a `LogEntry` (see [LogEntry interface](#logentry-interface)) and must return a plain string.
+
 ## Event Listeners
 
 ```ts
-log.on('levelChange', (event) => {
+const handler = (event) => {
   console.log('Level changed', event.data)
-})
+}
 
+log.on('levelChange', handler)
 log.setLevel('warn')
+
+// Remove the listener when no longer needed
+log.off('levelChange', handler)
 ```
 
-## Dynamic Config Update
+## Runtime Config Updates
 
 ```ts
+// Update any combination of options at runtime
 log.updateConfig({
   level: 'error',
   console: { colors: false },
 })
+
+// Update format options only
+log.configureFormat({
+  timestampFormat: 'datetime',
+  includeStack: false,
+})
+```
+
+## LogEntry Interface
+
+The `LogEntry` object is passed to `format.formatter` and emitted in log events:
+
+```ts
+interface LogEntry {
+  level:     LogLevel          // 'debug' | 'info' | 'warn' | 'error' | 'silent'
+  message:   string            // Log message string
+  timestamp: string            // ISO 8601 timestamp
+  name?:     string            // Logger name
+  file?:     string            // Caller file path (URL pathname in browser)
+  line?:     number            // Caller line number
+  data?:     any               // Extra data passed as second argument
+}
 ```
 
 ## LoggerOptions Reference
@@ -102,15 +137,32 @@ log.updateConfig({
 |---|---|---|---|
 | `name` | `string` | — | Logger name shown in output |
 | `level` | `LogLevel` | `'info'` | Minimum log level |
-| `console.enabled` | `boolean` | `true` | Whether to output to console |
-| `console.colors` | `boolean` | `true` | Enable %c CSS colour output |
-| `console.timestamp` | `boolean` | `true` | Show timestamp |
-| `format.enabled` | `boolean` | `false` | Enable custom formatter function |
-| `format.timestampFormat` | `'iso'\|'time'\|'datetime'` | `'time'` | Timestamp format |
-| `format.formatter` | `(entry) => string` | — | Custom format function |
-| `format.includeStack` | `boolean` | `true` | Show caller location |
-| `format.includeName` | `boolean` | `true` | Show logger name |
-| `errorHandling.onError` | `(err, ctx) => void` | — | Internal error callback |
+| `console.enabled` | `boolean` | `true` | Whether to write to the browser console |
+| `console.colors` | `boolean` | `true` | Enable `%c` CSS colour output |
+| `console.timestamp` | `boolean` | `true` | Show timestamp prefix |
+| `format.timestampFormat` | `'iso' \| 'time' \| 'datetime'` | `'time'` | Timestamp format (`'time'` → `HH:mm:ss.mmm`) |
+| `format.formatter` | `(entry: LogEntry) => string` | — | Custom format function; replaces default output |
+| `format.includeStack` | `boolean` | `true` | Append caller file and line number |
+| `format.includeName` | `boolean` | `true` | Append logger name |
+| `format.enabled` | `boolean` | — | **Deprecated** — providing `formatter` is sufficient |
+| `errorHandling.onError` | `(error: Error, context: string) => void` | — | Called when an internal logger error occurs |
+
+## Logger API
+
+| Method | Signature | Description |
+|---|---|---|
+| `debug` | `(...args: any[]) => void` | Log at debug level |
+| `info` | `(...args: any[]) => void` | Log at info level |
+| `warn` | `(...args: any[]) => void` | Log at warn level |
+| `error` | `(...args: any[]) => void` | Log at error level |
+| `setLevel` | `(level: LogLevel) => void` | Change the active log level |
+| `getLevel` | `() => LogLevel` | Return the current log level |
+| `child` | `(name: string, options?) => Logger` | Create a namespaced child logger |
+| `on` | `(type, handler) => void` | Register an event listener |
+| `off` | `(type, handler) => void` | Remove an event listener |
+| `updateConfig` | `(options: LoggerOptions) => void` | Partial update of any config option |
+| `configureFormat` | `(options: Partial<FormatOptions>) => void` | Update format options only |
+| `configureErrorHandling` | `(options: ErrorHandlingOptions) => void` | Update error handling only |
 
 ## Build
 
@@ -124,12 +176,12 @@ npm run typecheck    # type check only
 
 ```
 src/
-├── index.ts              # Public entry & default root logger
+├── index.ts              # Public entry & default logger (name: 'app', level: 'info')
 ├── core/
-│   ├── logger.ts         # Logger core class
-│   └── types.ts          # All type definitions
+│   ├── logger.ts         # Logger class
+│   └── types.ts          # All exported type definitions
 └── utils/
-    ├── caller-info.ts    # Call stack parser (LRU cache)
-    ├── color-utils.ts    # Browser %c colour style constants
-    └── formatter.ts      # Log formatter
+    ├── caller-info.ts    # Error stack parser with LRU cache
+    ├── color-utils.ts    # Browser %c CSS colour constants
+    └── formatter.ts      # LogFormatter — builds console args or plain text
 ```

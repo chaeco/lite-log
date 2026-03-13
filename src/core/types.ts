@@ -88,7 +88,7 @@ export interface LoggerEvent {
  * 日志格式化配置选项
  */
 export interface FormatOptions {
-  /** 是否启用自定义 formatter 函数，默认为 false */
+  /** @deprecated 提供 `formatter` 函数即自动生效，无需单独设置此项 */
   enabled?: boolean
   /** 日期时间格式字符串（使用 Intl.DateTimeFormat 格式），默认输出 ISO 毫秒时间 */
   timestampFormat?: 'iso' | 'time' | 'datetime'

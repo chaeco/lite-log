@@ -62,7 +62,7 @@ export class LogFormatter {
   formatMessage(entry: LogEntry): string {
     const { format } = this.settings
 
-    if (format.enabled && format.formatter) {
+    if (format.formatter) {
       try { return format.formatter(entry) } catch { /* fallthrough */ }
     }
 
@@ -77,7 +77,7 @@ export class LogFormatter {
   formatConsoleMessage(entry: LogEntry): string[] {
     const { consoleColors, consoleTimestamp, format } = this.settings
 
-    if (format.enabled && format.formatter) {
+    if (format.formatter) {
       try { return [format.formatter(entry)] } catch { /* fallthrough */ }
     }
 
