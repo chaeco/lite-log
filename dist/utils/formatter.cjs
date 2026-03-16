@@ -31,8 +31,7 @@ class LogFormatter {
     updateFormat(options) {
         var _a;
         const f = this.settings.format;
-        if (options.enabled !== undefined)
-            f.enabled = options.enabled;
+        // options.enabled 已废弃，忽略
         if (options.timestampFormat !== undefined)
             f.timestampFormat = (_a = options.timestampFormat) !== null && _a !== void 0 ? _a : 'time';
         if (options.formatter !== undefined)
@@ -47,12 +46,16 @@ class LogFormatter {
      * 格式化为纯文本字符串（适合 MemoryTransport 等记录场景）
      */
     formatMessage(entry) {
+        var _a, _b;
         const { format } = this.settings;
         if (format.formatter) {
             try {
                 return format.formatter(entry);
             }
-            catch ( /* fallthrough */_a) { /* fallthrough */ }
+            catch (e) {
+                (_b = (_a = this.settings).onError) === null || _b === void 0 ? void 0 : _b.call(_a, e instanceof Error ? e : new Error(String(e)), 'formatter');
+                // fallthrough to default format
+            }
         }
         return this.buildPlainText(entry);
     }
@@ -62,12 +65,16 @@ class LogFormatter {
      * 无色模式：`[plainText]`。
      */
     formatConsoleMessage(entry) {
+        var _a, _b;
         const { consoleColors, consoleTimestamp, format } = this.settings;
         if (format.formatter) {
             try {
                 return [format.formatter(entry)];
             }
-            catch ( /* fallthrough */_a) { /* fallthrough */ }
+            catch (e) {
+                (_b = (_a = this.settings).onError) === null || _b === void 0 ? void 0 : _b.call(_a, e instanceof Error ? e : new Error(String(e)), 'formatter');
+                // fallthrough to default format
+            }
         }
         if (!consoleColors) {
             return [this.buildPlainText(entry, consoleTimestamp)];

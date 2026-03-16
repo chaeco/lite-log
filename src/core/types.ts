@@ -39,7 +39,6 @@ export interface ConsoleOptions {
 
 /**
  * 日志条目接口
- * @internal
  */
 export interface LogEntry {
   /* eslint-disable @typescript-eslint/no-explicit-any */

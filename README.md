@@ -1,6 +1,7 @@
 # lite-log
 
 [![install via GitHub](https://img.shields.io/badge/install-github-4f46e5?logo=github)](https://github.com/chaeco/lite-log)
+[![CI](https://github.com/chaeco/lite-log/actions/workflows/ci.yml/badge.svg)](https://github.com/chaeco/lite-log/actions/workflows/ci.yml)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@chaeco/lite-log?color=06b6d4&label=minzipped)](https://bundlephobia.com/package/@chaeco/lite-log)
 [![license](https://img.shields.io/github/license/chaeco/lite-log?color=10b981)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -145,7 +146,7 @@ interface LogEntry {
 | `format.includeStack` | `boolean` | `true` | Append caller file and line number |
 | `format.includeName` | `boolean` | `true` | Append logger name |
 | `format.enabled` | `boolean` | — | **Deprecated** — providing `formatter` is sufficient |
-| `errorHandling.onError` | `(error: Error, context: string) => void` | — | Called when an internal logger error occurs |
+| `errorHandling.onError` | `(error: Error, context: string) => void` | — | Called when an internal error occurs: `format.formatter` throws, or an event listener throws. `context` is either `'formatter'` or `'eventHandler'`. |
 
 ## Logger API
 
@@ -167,9 +168,11 @@ interface LogEntry {
 ## Build
 
 ```bash
-npm run build        # generate dist/
-npm run build:watch  # watch mode
-npm run typecheck    # type check only
+npm run build          # generate dist/
+npm run build:watch    # watch mode
+npm run typecheck      # type check only
+npm run test           # run tests
+npm run test:coverage  # run tests with coverage report
 ```
 
 ## Project Structure

@@ -18,9 +18,7 @@ export class Logger {
   private consoleEnabled: boolean
   private readonly formatter: LogFormatter
   private readonly callerInfoHelper = new CallerInfoHelper()
-  private readonly errorHandling: Required<ErrorHandlingOptions> = {
-    onError: undefined as any,
-  }
+  private errorHandling: ErrorHandlingOptions = {}
   private readonly eventHandlers: Map<LoggerEventType, LoggerEventHandler[]> = new Map()
   private readonly levelPriority: Record<LogLevel, number> = {
     debug: 0, info: 1, warn: 2, error: 3, silent: 999,
@@ -35,8 +33,8 @@ export class Logger {
     this.formatter = new LogFormatter({
       consoleColors: options.console?.colors ?? true,
       consoleTimestamp: options.console?.timestamp ?? true,
+      onError: (e, ctx) => this.callOnError(e, ctx),
       format: {
-        enabled: options.format?.enabled ?? false,
         timestampFormat: options.format?.timestampFormat ?? 'time',
         formatter: options.format?.formatter,
         includeStack: options.format?.includeStack ?? true,
@@ -114,6 +112,12 @@ export class Logger {
 
   // ─── 内部实现 ────────────────────────────────────────────
 
+  private callOnError(error: Error, context: string): void {
+    if (this.errorHandling.onError) {
+      try { this.errorHandling.onError(error, context) } catch { /* 防止递归 */ }
+    }
+  }
+
   private shouldLog(level: LogLevel): boolean {
     return this.levelPriority[level] >= this.levelPriority[this.level]
   }
@@ -128,7 +132,9 @@ export class Logger {
       timestamp: new Date().toISOString(),
     }
     for (const h of handlers) {
-      try { h(event) } catch (e) { console.error('Error in logger event handler:', e) }
+      try { h(event) } catch (e) {
+        this.callOnError(e instanceof Error ? e : new Error(String(e)), 'eventHandler')
+      }
     }
   }
 

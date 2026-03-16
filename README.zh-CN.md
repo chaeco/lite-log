@@ -1,6 +1,7 @@
 # lite-log
 
 [![install via GitHub](https://img.shields.io/badge/install-github-4f46e5?logo=github)](https://github.com/chaeco/lite-log)
+[![CI](https://github.com/chaeco/lite-log/actions/workflows/ci.yml/badge.svg)](https://github.com/chaeco/lite-log/actions/workflows/ci.yml)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@chaeco/lite-log?color=06b6d4&label=minzipped)](https://bundlephobia.com/package/@chaeco/lite-log)
 [![license](https://img.shields.io/github/license/chaeco/lite-log?color=10b981)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -145,7 +146,7 @@ interface LogEntry {
 | `format.includeStack` | `boolean` | `true` | 是否追加调用文件和行号 |
 | `format.includeName` | `boolean` | `true` | 是否追加 logger 名称 |
 | `format.enabled` | `boolean` | — | **已废弃** — 提供 `formatter` 即自动生效 |
-| `errorHandling.onError` | `(error: Error, context: string) => void` | — | logger 内部发生错误时的回调 |
+| `errorHandling.onError` | `(error: Error, context: string) => void` | — | 内部错误时的回调：`format.formatter` 抛出异常、或事件监听器抛出异常时触发。`context` 为 `'formatter'` 或 `'eventHandler'`。 |
 
 ## Logger API
 
@@ -167,9 +168,11 @@ interface LogEntry {
 ## 构建
 
 ```bash
-npm run build        # 生成 dist/
-npm run build:watch  # 监听模式
-npm run typecheck    # 仅类型检查
+npm run build          # 生成 dist/
+npm run build:watch    # 监听模式
+npm run typecheck      # 仅类型检查
+npm run test           # 运行测试
+npm run test:coverage  # 运行测试并生成覆盖率报告
 ```
 
 ## 目录结构

@@ -36,7 +36,6 @@ interface ConsoleOptions {
 }
 /**
  * 日志条目接口
- * @internal
  */
 interface LogEntry {
     /** 日志等级 */
@@ -109,7 +108,7 @@ declare class Logger {
     private consoleEnabled;
     private readonly formatter;
     private readonly callerInfoHelper;
-    private readonly errorHandling;
+    private errorHandling;
     private readonly eventHandlers;
     private readonly levelPriority;
     constructor(options?: LoggerOptions);
@@ -125,6 +124,7 @@ declare class Logger {
     on(type: LoggerEventType, handler: LoggerEventHandler): void;
     off(type: LoggerEventType, handler: LoggerEventHandler): void;
     child(name: string, options?: Pick<LoggerOptions, 'level' | 'format' | 'errorHandling'>): Logger;
+    private callOnError;
     private shouldLog;
     private emitEvent;
     private createLogEntry;

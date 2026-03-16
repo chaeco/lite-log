@@ -180,8 +180,7 @@
         updateFormat(options) {
             var _a;
             const f = this.settings.format;
-            if (options.enabled !== undefined)
-                f.enabled = options.enabled;
+            // options.enabled 已废弃，忽略
             if (options.timestampFormat !== undefined)
                 f.timestampFormat = (_a = options.timestampFormat) !== null && _a !== void 0 ? _a : 'time';
             if (options.formatter !== undefined)
@@ -196,12 +195,16 @@
          * 格式化为纯文本字符串（适合 MemoryTransport 等记录场景）
          */
         formatMessage(entry) {
+            var _a, _b;
             const { format } = this.settings;
             if (format.formatter) {
                 try {
                     return format.formatter(entry);
                 }
-                catch ( /* fallthrough */_a) { /* fallthrough */ }
+                catch (e) {
+                    (_b = (_a = this.settings).onError) === null || _b === void 0 ? void 0 : _b.call(_a, e instanceof Error ? e : new Error(String(e)), 'formatter');
+                    // fallthrough to default format
+                }
             }
             return this.buildPlainText(entry);
         }
@@ -211,12 +214,16 @@
          * 无色模式：`[plainText]`。
          */
         formatConsoleMessage(entry) {
+            var _a, _b;
             const { consoleColors, consoleTimestamp, format } = this.settings;
             if (format.formatter) {
                 try {
                     return [format.formatter(entry)];
                 }
-                catch ( /* fallthrough */_a) { /* fallthrough */ }
+                catch (e) {
+                    (_b = (_a = this.settings).onError) === null || _b === void 0 ? void 0 : _b.call(_a, e instanceof Error ? e : new Error(String(e)), 'formatter');
+                    // fallthrough to default format
+                }
             }
             if (!consoleColors) {
                 return [this.buildPlainText(entry, consoleTimestamp)];
@@ -303,11 +310,9 @@
      */
     class Logger {
         constructor(options = {}) {
-            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
             this.callerInfoHelper = new CallerInfoHelper();
-            this.errorHandling = {
-                onError: undefined,
-            };
+            this.errorHandling = {};
             this.eventHandlers = new Map();
             this.levelPriority = {
                 debug: 0, info: 1, warn: 2, error: 3, silent: 999,
@@ -318,12 +323,12 @@
             this.formatter = new LogFormatter({
                 consoleColors: (_e = (_d = options.console) === null || _d === void 0 ? void 0 : _d.colors) !== null && _e !== void 0 ? _e : true,
                 consoleTimestamp: (_g = (_f = options.console) === null || _f === void 0 ? void 0 : _f.timestamp) !== null && _g !== void 0 ? _g : true,
+                onError: (e, ctx) => this.callOnError(e, ctx),
                 format: {
-                    enabled: (_j = (_h = options.format) === null || _h === void 0 ? void 0 : _h.enabled) !== null && _j !== void 0 ? _j : false,
-                    timestampFormat: (_l = (_k = options.format) === null || _k === void 0 ? void 0 : _k.timestampFormat) !== null && _l !== void 0 ? _l : 'time',
-                    formatter: (_m = options.format) === null || _m === void 0 ? void 0 : _m.formatter,
-                    includeStack: (_p = (_o = options.format) === null || _o === void 0 ? void 0 : _o.includeStack) !== null && _p !== void 0 ? _p : true,
-                    includeName: (_r = (_q = options.format) === null || _q === void 0 ? void 0 : _q.includeName) !== null && _r !== void 0 ? _r : true,
+                    timestampFormat: (_j = (_h = options.format) === null || _h === void 0 ? void 0 : _h.timestampFormat) !== null && _j !== void 0 ? _j : 'time',
+                    formatter: (_k = options.format) === null || _k === void 0 ? void 0 : _k.formatter,
+                    includeStack: (_m = (_l = options.format) === null || _l === void 0 ? void 0 : _l.includeStack) !== null && _m !== void 0 ? _m : true,
+                    includeName: (_p = (_o = options.format) === null || _o === void 0 ? void 0 : _o.includeName) !== null && _p !== void 0 ? _p : true,
                 },
             });
             if (options.errorHandling)
@@ -390,6 +395,14 @@
             });
         }
         // ─── 内部实现 ────────────────────────────────────────────
+        callOnError(error, context) {
+            if (this.errorHandling.onError) {
+                try {
+                    this.errorHandling.onError(error, context);
+                }
+                catch ( /* 防止递归 */_a) { /* 防止递归 */ }
+            }
+        }
         shouldLog(level) {
             return this.levelPriority[level] >= this.levelPriority[this.level];
         }
@@ -408,7 +421,7 @@
                     h(event);
                 }
                 catch (e) {
-                    console.error('Error in logger event handler:', e);
+                    this.callOnError(e instanceof Error ? e : new Error(String(e)), 'eventHandler');
                 }
             }
         }

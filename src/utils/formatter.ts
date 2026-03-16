@@ -7,8 +7,9 @@ import { ColorUtils } from './color-utils'
 export interface FormatterSettings {
   consoleTimestamp: boolean
   consoleColors: boolean
+  /** logger 内部发生错误时的回调（如自定义 formatter 抛出异常） */
+  onError?: (error: Error, context: string) => void
   format: {
-    enabled: boolean
     timestampFormat: 'iso' | 'time' | 'datetime'
     formatter?: (entry: LogEntry) => string
     includeStack: boolean
@@ -47,7 +48,7 @@ export class LogFormatter {
   /** 更新格式化选项（支持部分更新） */
   updateFormat(options: Partial<FormatOptions>): void {
     const f = this.settings.format
-    if (options.enabled !== undefined) f.enabled = options.enabled
+    // options.enabled 已废弃，忽略
     if (options.timestampFormat !== undefined) f.timestampFormat = options.timestampFormat ?? 'time'
     if (options.formatter !== undefined) f.formatter = options.formatter
     if (options.includeStack !== undefined) f.includeStack = options.includeStack
@@ -63,7 +64,10 @@ export class LogFormatter {
     const { format } = this.settings
 
     if (format.formatter) {
-      try { return format.formatter(entry) } catch { /* fallthrough */ }
+      try { return format.formatter(entry) } catch (e) {
+        this.settings.onError?.(e instanceof Error ? e : new Error(String(e)), 'formatter')
+        // fallthrough to default format
+      }
     }
 
     return this.buildPlainText(entry)
@@ -78,7 +82,10 @@ export class LogFormatter {
     const { consoleColors, consoleTimestamp, format } = this.settings
 
     if (format.formatter) {
-      try { return [format.formatter(entry)] } catch { /* fallthrough */ }
+      try { return [format.formatter(entry)] } catch (e) {
+        this.settings.onError?.(e instanceof Error ? e : new Error(String(e)), 'formatter')
+        // fallthrough to default format
+      }
     }
 
     if (!consoleColors) {
