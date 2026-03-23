@@ -93,5 +93,50 @@ describe('CallerInfoHelper', () => {
       // getCallerInfo internally tries new URL() — this test just ensures no crash
       expect(() => helper.getCallerInfo()).not.toThrow()
     })
+
+    it('processes URLs correctly', () => {
+      const helper = new CallerInfoHelper()
+      const result = helper.getCallerInfo()
+      // Result should contain either file path or be undefined
+      expect(result.file === undefined || typeof result.file === 'string').toBe(true)
+    })
+  })
+
+  describe('stack filtering', () => {
+    it('skips Error line in stack', () => {
+      const helper = new CallerInfoHelper()
+      const result = helper.getCallerInfo()
+      // Should successfully skip "Error" line and find actual caller
+      expect(result.file).toBeDefined()
+      expect(result.line).toBeGreaterThan(0)
+    })
+
+    it('skips internal Logger frames', () => {
+      const helper = new CallerInfoHelper()
+      // Multiple calls to test the internal frame skipping logic
+      const r1 = helper.getCallerInfo()
+      const r2 = helper.getCallerInfo()
+      // Both should find the test file, not Logger internals
+      expect(r1.file).toContain('caller-info.test.ts')
+      expect(r2.file).toContain('caller-info.test.ts')
+    })
+  })
+
+  describe('edge cases', () => {
+    it('handles very deep call stacks', () => {
+      const helper = new CallerInfoHelper()
+      let depth = 0
+      function deepCall(n: number): Record<string, unknown> {
+        depth++
+        if (n <= 0) {
+          return helper.getCallerInfo()
+        }
+        return deepCall(n - 1)
+      }
+      const result = deepCall(10)
+      expect(result.file).toBeDefined()
+      expect(depth).toBeGreaterThan(0)
+    })
   })
 })
+

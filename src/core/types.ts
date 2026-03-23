@@ -41,7 +41,6 @@ export interface ConsoleOptions {
  * 日志条目接口
  */
 export interface LogEntry {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   /** 日志等级 */
   level: LogLevel
   /** 日志消息内容 */
@@ -55,6 +54,7 @@ export interface LogEntry {
   /** 调用者行号 */
   line?: number
   /** 附加数据 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any
 }
 
@@ -72,7 +72,6 @@ export type LoggerEventHandler = (event: LoggerEvent) => void
  * Logger 事件接口
  */
 export interface LoggerEvent {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   /** 事件类型 */
   type: LoggerEventType
   /** 事件消息 */
@@ -80,6 +79,7 @@ export interface LoggerEvent {
   /** 事件发生的时间戳 */
   timestamp: string
   /** 事件的附加数据 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any
 }
 
@@ -89,7 +89,7 @@ export interface LoggerEvent {
 export interface FormatOptions {
   /** @deprecated 提供 `formatter` 函数即自动生效，无需单独设置此项 */
   enabled?: boolean
-  /** 日期时间格式字符串（使用 Intl.DateTimeFormat 格式），默认输出 ISO 毫秒时间 */
+  /** 时间戳输出格式：'iso' | 'time' | 'datetime'，默认 'time' */
   timestampFormat?: 'iso' | 'time' | 'datetime'
   /** 自定义格式化函数 */
   formatter?: (entry: LogEntry) => string

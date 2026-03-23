@@ -138,8 +138,13 @@ export class Logger {
     }
   }
 
-  private createLogEntry(level: LogLevel, message: string, data?: any): LogEntry {
-    const { file, line } = this.callerInfoHelper.getCallerInfo()
+  private createLogEntry(
+    level: LogLevel,
+    message: string,
+    data?: any,
+    callerInfo?: { file?: string; line?: number },
+  ): LogEntry {
+    const { file, line } = callerInfo ?? {}
     const entry: LogEntry = {
       level,
       message,
@@ -176,13 +181,17 @@ export class Logger {
       data = args.length === 2 ? args[1] : args.length > 2 ? args.slice(1) : undefined
     } else if (args[0] instanceof Error) {
       message = args[0].message || String(args[0])
-      data = args.length > 1 ? { error: args[0], additionalData: args.slice(1) } : args[0]
+      data = args.length > 1
+        ? { error: args[0], additionalData: args.length === 2 ? args[1] : args.slice(1) }
+        : args[0]
     } else {
       message = ''
       data = args.length === 1 ? args[0] : args
     }
 
-    const entry = this.createLogEntry(level, message, data)
+    const includeStack = this.formatter.settings.format.includeStack
+    const callerInfo = includeStack ? this.callerInfoHelper.getCallerInfo() : undefined
+    const entry = this.createLogEntry(level, message, data, callerInfo)
     this.writeToConsole(entry)
   }
 }

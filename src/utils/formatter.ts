@@ -49,7 +49,7 @@ export class LogFormatter {
   updateFormat(options: Partial<FormatOptions>): void {
     const f = this.settings.format
     // options.enabled 已废弃，忽略
-    if (options.timestampFormat !== undefined) f.timestampFormat = options.timestampFormat ?? 'time'
+    if (options.timestampFormat !== undefined) f.timestampFormat = options.timestampFormat
     if (options.formatter !== undefined) f.formatter = options.formatter
     if (options.includeStack !== undefined) f.includeStack = options.includeStack
     if (options.includeName !== undefined) f.includeName = options.includeName
@@ -157,15 +157,19 @@ export class LogFormatter {
     return parts.join(' ')
   }
 
-  /** 安全 JSON 序列化，处理循环引用 */
+  /** 安全 JSON 序列化，处理循环引用及 Error 对象的不可枚举属性 */
   private safeStringify(obj: any, indent?: number): string {
     if (obj === null || typeof obj !== 'object') return String(obj)
+
+    // Error 的 message/name/stack 均为不可枚举属性，JSON.stringify 会返回 {}
+    if (obj instanceof Error) return `[${obj.name}: ${obj.message}]`
 
     try {
       const seen = new WeakSet()
       return JSON.stringify(
         obj,
         (_key: string, value: any) => {
+          if (value instanceof Error) return `[${value.name}: ${value.message}]`
           if (typeof value === 'object' && value !== null) {
             if (seen.has(value)) return '[Circular]'
             seen.add(value)

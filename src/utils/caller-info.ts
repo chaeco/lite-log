@@ -22,8 +22,12 @@ export class CallerInfoHelper {
     if (!stack) return {}
 
     const stackHash = this.simpleHash(stack)
-    if (this.cache.has(stackHash)) {
-      return this.cache.get(stackHash)!
+    const cached = this.cache.get(stackHash)
+    if (cached) {
+      // refresh order for LRU
+      this.cache.delete(stackHash)
+      this.cache.set(stackHash, cached)
+      return cached
     }
 
     const stackLines = stack.split('\n')

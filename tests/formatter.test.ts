@@ -262,3 +262,149 @@ describe('LogFormatter.updateFormat', () => {
     expect(() => f.updateFormat({ enabled: true })).not.toThrow()
   })
 })
+
+// ─── Error object serialization ────────────────────────────
+
+describe('LogFormatter Error object handling', () => {
+  it('serializes Error object in data field correctly', () => {
+    const f = new LogFormatter(baseSettings())
+    const err = new Error('test error message')
+    const out = f.formatMessage(makeEntry({ data: err }))
+    expect(out).toContain('Error: test error message')
+  })
+
+  it('handles Error with undefined message', () => {
+    const f = new LogFormatter(baseSettings())
+    const err = new Error()
+    const out = f.formatMessage(makeEntry({ data: err }))
+    expect(out).toContain('Error')
+  })
+
+  it('handles nested Error in data object', () => {
+    const f = new LogFormatter(baseSettings())
+    const err = new Error('nested')
+    const out = f.formatMessage(makeEntry({ data: { error: err } }))
+    expect(out).toContain('Error')
+    expect(out).toContain('nested')
+  })
+
+  it('serializes Error in console color mode', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const err = new Error('console error')
+    const result = f.formatConsoleMessage(makeEntry({ data: err }))
+    expect(result[result.length - 1]).toBe(err)
+  })
+})
+
+// ─── Console color mode - all levels ───────────────────────
+
+describe('LogFormatter color mode - all log levels', () => {
+  it('debug level in color mode', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const result = f.formatConsoleMessage(makeEntry({ level: 'debug' }))
+    expect(result[0]).toContain('DEBUG')
+    expect(result[0]).toContain('%c')
+  })
+
+  it('info level in color mode', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const result = f.formatConsoleMessage(makeEntry({ level: 'info' }))
+    expect(result[0]).toContain('INFO')
+    expect(result[0]).toContain('%c')
+  })
+
+  it('warn level in color mode', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const result = f.formatConsoleMessage(makeEntry({ level: 'warn' }))
+    expect(result[0]).toContain('WARN')
+    expect(result[0]).toContain('%c')
+  })
+
+  it('error level in color mode', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const result = f.formatConsoleMessage(makeEntry({ level: 'error' }))
+    expect(result[0]).toContain('ERROR')
+    expect(result[0]).toContain('%c')
+  })
+})
+
+// ─── Console timestamp behavior ────────────────────────────
+
+describe('LogFormatter console timestamp behavior', () => {
+  it('includes timestamp when consoleTimestamp is true', () => {
+    const f = new LogFormatter(baseSettings({ consoleTimestamp: true }))
+    const result = f.formatConsoleMessage(makeEntry())
+    expect(result[0]).toContain('12:00:00')
+  })
+
+  it('excludes timestamp when consoleTimestamp is false', () => {
+    const f = new LogFormatter(baseSettings({ consoleTimestamp: false }))
+    const result = f.formatConsoleMessage(makeEntry())
+    expect(result[0]).not.toContain('12:00:00')
+  })
+
+  it('color mode respects consoleTimestamp setting', () => {
+    const f = new LogFormatter(baseSettings({
+      consoleColors: true,
+      consoleTimestamp: false,
+    }))
+    const result = f.formatConsoleMessage(makeEntry())
+    expect(result[0]).not.toContain('12:00:00')
+  })
+})
+
+// ─── Data in color mode ────────────────────────────────────
+
+describe('LogFormatter color mode data handling', () => {
+  it('appends undefined data as single final element', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const result = f.formatConsoleMessage(makeEntry({ data: undefined }))
+    // Format string + CSS styles only, no data
+    expect(typeof result[result.length - 1]).toBe('string')
+    expect(result.length).toBeGreaterThan(1)
+  })
+
+  it('appends non-string data directly', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const data = { key: 'value', num: 42 }
+    const result = f.formatConsoleMessage(makeEntry({ data }))
+    expect(result[result.length - 1]).toBe(data)
+  })
+
+  it('appends array data directly', () => {
+    const f = new LogFormatter(baseSettings({ consoleColors: true }))
+    const data = [1, 2, 3]
+    const result = f.formatConsoleMessage(makeEntry({ data }))
+    expect(result[result.length - 1]).toBe(data)
+  })
+})
+
+// ─── Plain text mode with various data types ───────────────
+
+describe('LogFormatter plain text mode data handling', () => {
+  it('serializes boolean data', () => {
+    const f = new LogFormatter(baseSettings())
+    const out = f.formatMessage(makeEntry({ data: true }))
+    expect(out).toContain('true')
+  })
+
+  it('serializes number data', () => {
+    const f = new LogFormatter(baseSettings())
+    const out = f.formatMessage(makeEntry({ data: 42 }))
+    expect(out).toContain('42')
+  })
+
+  it('serializes array data', () => {
+    const f = new LogFormatter(baseSettings())
+    const out = f.formatMessage(makeEntry({ data: [1, 2, 3] }))
+    expect(out).toContain('[1,2,3]')
+  })
+
+  it('handles undefined data gracefully (not included in output)', () => {
+    const f = new LogFormatter(baseSettings())
+    const out = f.formatMessage(makeEntry({ data: undefined }))
+    // undefined data should not append anything
+    expect(out).toContain('test message')
+    expect(out).not.toContain('undefined')
+  })
+})

@@ -128,7 +128,9 @@ interface LogEntry {
   name?:     string            // Logger name
   file?:     string            // Caller file path (URL pathname in browser)
   line?:     number            // Caller line number
-  data?:     any               // Extra data passed as second argument
+  data?:     any               // Extra data: second argument when first is a string;
+                               // the Error object itself when only an Error is passed;
+                               // { error, additionalData } when an Error is followed by extra args
 }
 ```
 
@@ -143,7 +145,7 @@ interface LogEntry {
 | `console.timestamp` | `boolean` | `true` | Show timestamp prefix |
 | `format.timestampFormat` | `'iso' \| 'time' \| 'datetime'` | `'time'` | Timestamp format (`'time'` → `HH:mm:ss.mmm`) |
 | `format.formatter` | `(entry: LogEntry) => string` | — | Custom format function; replaces default output |
-| `format.includeStack` | `boolean` | `true` | Append caller file and line number |
+| `format.includeStack` | `boolean` | `true` | Append caller file and line number (caller info is only computed when true) |
 | `format.includeName` | `boolean` | `true` | Append logger name |
 | `format.enabled` | `boolean` | — | **Deprecated** — providing `formatter` is sufficient |
 | `errorHandling.onError` | `(error: Error, context: string) => void` | — | Called when an internal error occurs: `format.formatter` throws, or an event listener throws. `context` is either `'formatter'` or `'eventHandler'`. |

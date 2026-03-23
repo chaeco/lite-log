@@ -41,8 +41,4 @@ export class ColorUtils {
   static get locationStyle(): string {
     return 'color:#6b7280'
   }
-
-  static get resetStyle(): string {
-    return RESET_STYLE
-  }
 }

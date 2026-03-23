@@ -128,7 +128,9 @@ interface LogEntry {
   name?:     string            // Logger 名称
   file?:     string            // 调用者文件路径（浏览器中为 URL pathname）
   line?:     number            // 调用者行号
-  data?:     any               // 第二参数传入的附加数据
+  data?:     any               // 附加数据：当第一参数为字符串时为第二参数；
+                               // 仅传入 Error 时为该 Error 对象本身；
+                               // Error 后跟额外参数时为 { error, additionalData }
 }
 ```
 
@@ -143,7 +145,7 @@ interface LogEntry {
 | `console.timestamp` | `boolean` | `true` | 是否显示时间戳前缀 |
 | `format.timestampFormat` | `'iso' \| 'time' \| 'datetime'` | `'time'` | 时间戳格式（`'time'` → `HH:mm:ss.mmm`） |
 | `format.formatter` | `(entry: LogEntry) => string` | — | 自定义格式化函数，替换默认输出 |
-| `format.includeStack` | `boolean` | `true` | 是否追加调用文件和行号 |
+| `format.includeStack` | `boolean` | `true` | 是否追加调用文件和行号（仅在 true 时解析调用栈） |
 | `format.includeName` | `boolean` | `true` | 是否追加 logger 名称 |
 | `format.enabled` | `boolean` | — | **已废弃** — 提供 `formatter` 即自动生效 |
 | `errorHandling.onError` | `(error: Error, context: string) => void` | — | 内部错误时的回调：`format.formatter` 抛出异常、或事件监听器抛出异常时触发。`context` 为 `'formatter'` 或 `'eventHandler'`。 |
