@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2026-03-24
+
+### Fixed
+
+- **Dependency resolution in CI/local clean installs**:
+  - Upgraded ESLint to `^10.0.0` to align with `@eslint/js@^10.0.1`
+  - Restored `npm ci` compatibility by syncing lockfile
+
+- **Husky auto-installation for fresh clones**:
+  - Added `prepare` script so git hooks are installed after dependency install
+
+- **Release trigger coverage**:
+  - Added dedicated release workflow for push tags (`v*`) and manual dispatch
+  - Kept default CI focused on branch push and pull request validation
+
+### Improved
+
+- **ESLint configuration consistency**:
+  - Consolidated onto flat config (`eslint.config.js`) and removed legacy `.eslintrc.json`
+
+### Test Coverage
+
+- **Target vs Achieved**:
+  - Statements: 80% → 94.22% ✓
+  - Branches: 70% → 93.12% ✓
+  - Functions: 80% → 100% ✓
+
 ## [0.0.3] - 2025-03-24
 
 ### Added
