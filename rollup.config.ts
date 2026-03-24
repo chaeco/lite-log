@@ -1,5 +1,5 @@
-import typescript from '@rollup/plugin-typescript'
-import dts from 'rollup-plugin-dts'
+import typescript from '@rollup/plugin-typescript';
+import dts from 'rollup-plugin-dts';
 
 const config = [
   // ESM — preserves original directory structure
@@ -45,6 +45,6 @@ const config = [
     output: { file: 'dist/index.d.ts', format: 'es' },
     plugins: [dts()],
   },
-]
+];
 
-export default config
+export default config;

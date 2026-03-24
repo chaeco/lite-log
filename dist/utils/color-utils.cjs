@@ -37,9 +37,6 @@ class ColorUtils {
     static get locationStyle() {
         return 'color:#6b7280';
     }
-    static get resetStyle() {
-        return RESET_STYLE;
-    }
 }
 
 exports.ColorUtils = ColorUtils;

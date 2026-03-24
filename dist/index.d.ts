@@ -80,7 +80,7 @@ interface LoggerEvent {
 interface FormatOptions {
     /** @deprecated 提供 `formatter` 函数即自动生效，无需单独设置此项 */
     enabled?: boolean;
-    /** 日期时间格式字符串（使用 Intl.DateTimeFormat 格式），默认输出 ISO 毫秒时间 */
+    /** 时间戳输出格式：'iso' | 'time' | 'datetime'，默认 'time' */
     timestampFormat?: 'iso' | 'time' | 'datetime';
     /** 自定义格式化函数 */
     formatter?: (entry: LogEntry) => string;

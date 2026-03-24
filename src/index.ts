@@ -8,8 +8,8 @@
  * @packageDocumentation
  */
 
-import { Logger } from './core/logger'
-export { Logger }
+import { Logger } from './core/logger';
+export { Logger };
 
 export type {
   LogLevel,
@@ -21,7 +21,7 @@ export type {
   LoggerEvent,
   FormatOptions,
   ErrorHandlingOptions,
-} from './core/types'
+} from './core/types';
 
 /**
  * 默认 Logger 实例（name: 'app'，level: 'info'）
@@ -29,6 +29,6 @@ export type {
 export const logger = new Logger({
   name: 'app',
   console: { enabled: true, colors: true, timestamp: true },
-})
+});
 
-export default logger
+export default logger;

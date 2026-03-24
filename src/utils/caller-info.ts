@@ -5,38 +5,38 @@
  * 兼容浏览器与 Node.js 运行时。
  */
 export class CallerInfoHelper {
-  private readonly cache: Map<string, { file?: string; line?: number }> = new Map()
-  private readonly maxCacheSize: number
+  private readonly cache: Map<string, { file?: string; line?: number }> = new Map();
+  private readonly maxCacheSize: number;
 
   constructor(maxCacheSize = 500) {
-    this.maxCacheSize = maxCacheSize
+    this.maxCacheSize = maxCacheSize;
   }
 
   /**
    * 获取当前调用者的文件路径和行号
    */
   getCallerInfo(): { file?: string; line?: number } {
-    const error = new Error()
-    const stack = error.stack
+    const error = new Error();
+    const stack = error.stack;
 
-    if (!stack) return {}
+    if (!stack) return {};
 
-    const stackHash = this.simpleHash(stack)
-    const cached = this.cache.get(stackHash)
+    const stackHash = this.simpleHash(stack);
+    const cached = this.cache.get(stackHash);
     if (cached) {
       // refresh order for LRU
-      this.cache.delete(stackHash)
-      this.cache.set(stackHash, cached)
-      return cached
+      this.cache.delete(stackHash);
+      this.cache.set(stackHash, cached);
+      return cached;
     }
 
-    const stackLines = stack.split('\n')
+    const stackLines = stack.split('\n');
 
     for (let i = 0; i < stackLines.length; i++) {
-      const line = stackLines[i]?.trim()
+      const line = stackLines[i]?.trim();
 
-      if (!line) continue
-      if (line.startsWith('Error')) continue
+      if (!line) continue;
+      if (line.startsWith('Error')) continue;
 
       // 跳过所有 logger 内部帧
       if (
@@ -49,48 +49,44 @@ export class CallerInfoHelper {
         line.includes('getCallerInfo') ||
         line.includes('CallerInfoHelper')
       ) {
-        continue
+        continue;
       }
 
       // 匹配文件路径和行号（支持 V8 和 SpiderMonkey 格式）
-      const match = line.match(/\((.+?):(\d+):\d+\)$/) || line.match(/at (.+?):(\d+):\d+$/)
+      const match = line.match(/\((.+?):(\d+):\d+\)$/) || line.match(/at (.+?):(\d+):\d+$/);
 
       if (match && match[1] && match[2]) {
-        const filePath = match[1]
-        const lineNumber = parseInt(match[2], 10)
+        const filePath = match[1];
+        const lineNumber = parseInt(match[2], 10);
 
-        if (
-          filePath &&
-          !filePath.includes('node:internal') &&
-          !filePath.includes('node_modules')
-        ) {
+        if (filePath && !filePath.includes('node:internal') && !filePath.includes('node_modules')) {
           // 浏览器：保留 URL 中 origin 之后的路径部分，使其简洁
-          let simplifiedPath = filePath
+          let simplifiedPath = filePath;
           try {
-            const url = new URL(filePath)
-            simplifiedPath = url.pathname + (url.search || '')
+            const url = new URL(filePath);
+            simplifiedPath = url.pathname + (url.search || '');
           } catch {
             // 非 URL（如 Node.js 绝对路径），保持原样
           }
 
-          const result = { file: simplifiedPath, line: lineNumber }
-          this.cacheResult(stackHash, result)
-          return result
+          const result = { file: simplifiedPath, line: lineNumber };
+          this.cacheResult(stackHash, result);
+          return result;
         }
       }
     }
 
-    return {}
+    return {};
   }
 
   /** 清除缓存 */
   clearCache(): void {
-    this.cache.clear()
+    this.cache.clear();
   }
 
   /** 获取缓存大小（调试用） */
   getCacheSize(): number {
-    return this.cache.size
+    return this.cache.size;
   }
 
   // ─── 私有方法 ─────────────────────────────────────────────
@@ -100,27 +96,27 @@ export class CallerInfoHelper {
    * 参考：https://stackoverflow.com/a/52171480
    */
   private simpleHash(str: string): string {
-    let h1 = 0xdeadbeef
-    let h2 = 0x41c6ce57
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
     for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      h1 = Math.imul(h1 ^ char, 2654435761)
-      h2 = Math.imul(h2 ^ char, 1597334677)
+      const char = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ char, 2654435761);
+      h2 = Math.imul(h2 ^ char, 1597334677);
     }
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-    const hash = 4294967296 * (2097151 & h2) + (h1 >>> 0)
-    return hash.toString(36)
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    const hash = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    return hash.toString(36);
   }
 
   /** LRU 缓存写入：满时淘汰最旧项 */
   private cacheResult(key: string, info: { file?: string; line?: number }): void {
     if (this.cache.size >= this.maxCacheSize) {
-      const firstKey = this.cache.keys().next().value
+      const firstKey = this.cache.keys().next().value;
       if (firstKey !== undefined) {
-        this.cache.delete(firstKey)
+        this.cache.delete(firstKey);
       }
     }
-    this.cache.set(key, info)
+    this.cache.set(key, info);
   }
 }

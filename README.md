@@ -33,47 +33,47 @@ npm install github:chaeco/lite-log
 ## Quick Start
 
 ```ts
-import logger from '@chaeco/lite-log'
+import logger from '@chaeco/lite-log';
 
-logger.info('App started')
-logger.debug('Fetched user', { userId: 123 })
-logger.warn('Slow response detected')
-logger.error('Request failed', new Error('timeout'))
+logger.info('App started');
+logger.debug('Fetched user', { userId: 123 });
+logger.warn('Slow response detected');
+logger.error('Request failed', new Error('timeout'));
 
 // Pass an Error directly — message is extracted automatically
-logger.error(new Error('unexpected state'))
+logger.error(new Error('unexpected state'));
 ```
 
 ## Create a Standalone Logger
 
 ```ts
-import { Logger } from '@chaeco/lite-log'
+import { Logger } from '@chaeco/lite-log';
 
 const log = new Logger({
   name: 'payment',
   level: 'debug',
   console: { colors: true, timestamp: true },
-})
+});
 
-log.info('Payment request', { amount: 100 })
+log.info('Payment request', { amount: 100 });
 ```
 
 ## Child Logger
 
 ```ts
 // Inherits level, console, and format from parent
-const httpLog = log.child('http')
-httpLog.debug('GET /api/user 200')
+const httpLog = log.child('http');
+httpLog.debug('GET /api/user 200');
 // Output prefix: payment:http
 
 // Override level or format for the child only
-const verboseLog = log.child('debug', { level: 'debug' })
+const verboseLog = log.child('debug', { level: 'debug' });
 ```
 
 ## Custom Formatter
 
 ```ts
-import { Logger, LogEntry } from '@chaeco/lite-log'
+import { Logger, LogEntry } from '@chaeco/lite-log';
 
 const log = new Logger({
   name: 'app',
@@ -81,7 +81,7 @@ const log = new Logger({
     formatter: (entry: LogEntry) =>
       `[${entry.level.toUpperCase()}] ${entry.name} — ${entry.message}`,
   },
-})
+});
 ```
 
 When `format.formatter` is provided, it **replaces the entire default output**. The function receives a `LogEntry` (see [LogEntry interface](#logentry-interface)) and must return a plain string.
@@ -90,14 +90,14 @@ When `format.formatter` is provided, it **replaces the entire default output**. 
 
 ```ts
 const handler = (event) => {
-  console.log('Level changed', event.data)
-}
+  console.log('Level changed', event.data);
+};
 
-log.on('levelChange', handler)
-log.setLevel('warn')
+log.on('levelChange', handler);
+log.setLevel('warn');
 
 // Remove the listener when no longer needed
-log.off('levelChange', handler)
+log.off('levelChange', handler);
 ```
 
 ## Runtime Config Updates
@@ -107,13 +107,13 @@ log.off('levelChange', handler)
 log.updateConfig({
   level: 'error',
   console: { colors: false },
-})
+});
 
 // Update format options only
 log.configureFormat({
   timestampFormat: 'datetime',
   includeStack: false,
-})
+});
 ```
 
 ## LogEntry Interface
@@ -122,50 +122,50 @@ The `LogEntry` object is passed to `format.formatter` and emitted in log events:
 
 ```ts
 interface LogEntry {
-  level:     LogLevel          // 'debug' | 'info' | 'warn' | 'error' | 'silent'
-  message:   string            // Log message string
-  timestamp: string            // ISO 8601 timestamp
-  name?:     string            // Logger name
-  file?:     string            // Caller file path (URL pathname in browser)
-  line?:     number            // Caller line number
-  data?:     any               // Extra data: second argument when first is a string;
-                               // the Error object itself when only an Error is passed;
-                               // { error, additionalData } when an Error is followed by extra args
+  level: LogLevel; // 'debug' | 'info' | 'warn' | 'error' | 'silent'
+  message: string; // Log message string
+  timestamp: string; // ISO 8601 timestamp
+  name?: string; // Logger name
+  file?: string; // Caller file path (URL pathname in browser)
+  line?: number; // Caller line number
+  data?: any; // Extra data: second argument when first is a string;
+  // the Error object itself when only an Error is passed;
+  // { error, additionalData } when an Error is followed by extra args
 }
 ```
 
 ## LoggerOptions Reference
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `name` | `string` | — | Logger name shown in output |
-| `level` | `LogLevel` | `'info'` | Minimum log level |
-| `console.enabled` | `boolean` | `true` | Whether to write to the browser console |
-| `console.colors` | `boolean` | `true` | Enable `%c` CSS colour output |
-| `console.timestamp` | `boolean` | `true` | Show timestamp prefix |
-| `format.timestampFormat` | `'iso' \| 'time' \| 'datetime'` | `'time'` | Timestamp format (`'time'` → `HH:mm:ss.mmm`) |
-| `format.formatter` | `(entry: LogEntry) => string` | — | Custom format function; replaces default output |
-| `format.includeStack` | `boolean` | `true` | Append caller file and line number (caller info is only computed when true) |
-| `format.includeName` | `boolean` | `true` | Append logger name |
-| `format.enabled` | `boolean` | — | **Deprecated** — providing `formatter` is sufficient |
-| `errorHandling.onError` | `(error: Error, context: string) => void` | — | Called when an internal error occurs: `format.formatter` throws, or an event listener throws. `context` is either `'formatter'` or `'eventHandler'`. |
+| Option                   | Type                                      | Default  | Description                                                                                                                                          |
+| ------------------------ | ----------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | `string`                                  | —        | Logger name shown in output                                                                                                                          |
+| `level`                  | `LogLevel`                                | `'info'` | Minimum log level                                                                                                                                    |
+| `console.enabled`        | `boolean`                                 | `true`   | Whether to write to the browser console                                                                                                              |
+| `console.colors`         | `boolean`                                 | `true`   | Enable `%c` CSS colour output                                                                                                                        |
+| `console.timestamp`      | `boolean`                                 | `true`   | Show timestamp prefix                                                                                                                                |
+| `format.timestampFormat` | `'iso' \| 'time' \| 'datetime'`           | `'time'` | Timestamp format (`'time'` → `HH:mm:ss.mmm`)                                                                                                         |
+| `format.formatter`       | `(entry: LogEntry) => string`             | —        | Custom format function; replaces default output                                                                                                      |
+| `format.includeStack`    | `boolean`                                 | `true`   | Append caller file and line number (caller info is only computed when true)                                                                          |
+| `format.includeName`     | `boolean`                                 | `true`   | Append logger name                                                                                                                                   |
+| `format.enabled`         | `boolean`                                 | —        | **Deprecated** — providing `formatter` is sufficient                                                                                                 |
+| `errorHandling.onError`  | `(error: Error, context: string) => void` | —        | Called when an internal error occurs: `format.formatter` throws, or an event listener throws. `context` is either `'formatter'` or `'eventHandler'`. |
 
 ## Logger API
 
-| Method | Signature | Description |
-|---|---|---|
-| `debug` | `(...args: any[]) => void` | Log at debug level |
-| `info` | `(...args: any[]) => void` | Log at info level |
-| `warn` | `(...args: any[]) => void` | Log at warn level |
-| `error` | `(...args: any[]) => void` | Log at error level |
-| `setLevel` | `(level: LogLevel) => void` | Change the active log level |
-| `getLevel` | `() => LogLevel` | Return the current log level |
-| `child` | `(name: string, options?) => Logger` | Create a namespaced child logger |
-| `on` | `(type, handler) => void` | Register an event listener |
-| `off` | `(type, handler) => void` | Remove an event listener |
-| `updateConfig` | `(options: LoggerOptions) => void` | Partial update of any config option |
-| `configureFormat` | `(options: Partial<FormatOptions>) => void` | Update format options only |
-| `configureErrorHandling` | `(options: ErrorHandlingOptions) => void` | Update error handling only |
+| Method                   | Signature                                   | Description                         |
+| ------------------------ | ------------------------------------------- | ----------------------------------- |
+| `debug`                  | `(...args: any[]) => void`                  | Log at debug level                  |
+| `info`                   | `(...args: any[]) => void`                  | Log at info level                   |
+| `warn`                   | `(...args: any[]) => void`                  | Log at warn level                   |
+| `error`                  | `(...args: any[]) => void`                  | Log at error level                  |
+| `setLevel`               | `(level: LogLevel) => void`                 | Change the active log level         |
+| `getLevel`               | `() => LogLevel`                            | Return the current log level        |
+| `child`                  | `(name: string, options?) => Logger`        | Create a namespaced child logger    |
+| `on`                     | `(type, handler) => void`                   | Register an event listener          |
+| `off`                    | `(type, handler) => void`                   | Remove an event listener            |
+| `updateConfig`           | `(options: LoggerOptions) => void`          | Partial update of any config option |
+| `configureFormat`        | `(options: Partial<FormatOptions>) => void` | Update format options only          |
+| `configureErrorHandling` | `(options: ErrorHandlingOptions) => void`   | Update error handling only          |
 
 ## Build
 

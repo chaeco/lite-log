@@ -8,10 +8,13 @@ var colorUtils = require('./color-utils.cjs');
  */
 function formatTimestamp(ts, fmt) {
     switch (fmt) {
-        case 'time': return ts.slice(11, 23); // HH:mm:ss.mmm
-        case 'datetime': return ts.slice(0, 23).replace('T', ' '); // YYYY-MM-DD HH:mm:ss.mmm
+        case 'time':
+            return ts.slice(11, 23); // HH:mm:ss.mmm
+        case 'datetime':
+            return ts.slice(0, 23).replace('T', ' '); // YYYY-MM-DD HH:mm:ss.mmm
         case 'iso':
-        default: return ts;
+        default:
+            return ts;
     }
 }
 /**
@@ -29,11 +32,10 @@ class LogFormatter {
     }
     /** 更新格式化选项（支持部分更新） */
     updateFormat(options) {
-        var _a;
         const f = this.settings.format;
         // options.enabled 已废弃，忽略
         if (options.timestampFormat !== undefined)
-            f.timestampFormat = (_a = options.timestampFormat) !== null && _a !== void 0 ? _a : 'time';
+            f.timestampFormat = options.timestampFormat;
         if (options.formatter !== undefined)
             f.formatter = options.formatter;
         if (options.includeStack !== undefined)
@@ -128,13 +130,18 @@ class LogFormatter {
             parts.push(this.safeStringify(entry.data));
         return parts.join(' ');
     }
-    /** 安全 JSON 序列化，处理循环引用 */
+    /** 安全 JSON 序列化，处理循环引用及 Error 对象的不可枚举属性 */
     safeStringify(obj, indent) {
         if (obj === null || typeof obj !== 'object')
             return String(obj);
+        // Error 的 message/name/stack 均为不可枚举属性，JSON.stringify 会返回 {}
+        if (obj instanceof Error)
+            return `[${obj.name}: ${obj.message}]`;
         try {
             const seen = new WeakSet();
             return JSON.stringify(obj, (_key, value) => {
+                if (value instanceof Error)
+                    return `[${value.name}: ${value.message}]`;
                 if (typeof value === 'object' && value !== null) {
                     if (seen.has(value))
                         return '[Circular]';

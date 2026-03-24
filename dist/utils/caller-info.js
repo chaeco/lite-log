@@ -19,8 +19,12 @@ class CallerInfoHelper {
         if (!stack)
             return {};
         const stackHash = this.simpleHash(stack);
-        if (this.cache.has(stackHash)) {
-            return this.cache.get(stackHash);
+        const cached = this.cache.get(stackHash);
+        if (cached) {
+            // refresh order for LRU
+            this.cache.delete(stackHash);
+            this.cache.set(stackHash, cached);
+            return cached;
         }
         const stackLines = stack.split('\n');
         for (let i = 0; i < stackLines.length; i++) {
@@ -45,9 +49,7 @@ class CallerInfoHelper {
             if (match && match[1] && match[2]) {
                 const filePath = match[1];
                 const lineNumber = parseInt(match[2], 10);
-                if (filePath &&
-                    !filePath.includes('node:internal') &&
-                    !filePath.includes('node_modules')) {
+                if (filePath && !filePath.includes('node:internal') && !filePath.includes('node_modules')) {
                     // 浏览器：保留 URL 中 origin 之后的路径部分，使其简洁
                     let simplifiedPath = filePath;
                     try {

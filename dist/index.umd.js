@@ -25,8 +25,12 @@
             if (!stack)
                 return {};
             const stackHash = this.simpleHash(stack);
-            if (this.cache.has(stackHash)) {
-                return this.cache.get(stackHash);
+            const cached = this.cache.get(stackHash);
+            if (cached) {
+                // refresh order for LRU
+                this.cache.delete(stackHash);
+                this.cache.set(stackHash, cached);
+                return cached;
             }
             const stackLines = stack.split('\n');
             for (let i = 0; i < stackLines.length; i++) {
@@ -51,9 +55,7 @@
                 if (match && match[1] && match[2]) {
                     const filePath = match[1];
                     const lineNumber = parseInt(match[2], 10);
-                    if (filePath &&
-                        !filePath.includes('node:internal') &&
-                        !filePath.includes('node_modules')) {
+                    if (filePath && !filePath.includes('node:internal') && !filePath.includes('node_modules')) {
                         // 浏览器：保留 URL 中 origin 之后的路径部分，使其简洁
                         let simplifiedPath = filePath;
                         try {
@@ -146,9 +148,6 @@
         static get locationStyle() {
             return 'color:#6b7280';
         }
-        static get resetStyle() {
-            return RESET_STYLE;
-        }
     }
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -157,10 +156,13 @@
      */
     function formatTimestamp(ts, fmt) {
         switch (fmt) {
-            case 'time': return ts.slice(11, 23); // HH:mm:ss.mmm
-            case 'datetime': return ts.slice(0, 23).replace('T', ' '); // YYYY-MM-DD HH:mm:ss.mmm
+            case 'time':
+                return ts.slice(11, 23); // HH:mm:ss.mmm
+            case 'datetime':
+                return ts.slice(0, 23).replace('T', ' '); // YYYY-MM-DD HH:mm:ss.mmm
             case 'iso':
-            default: return ts;
+            default:
+                return ts;
         }
     }
     /**
@@ -178,11 +180,10 @@
         }
         /** 更新格式化选项（支持部分更新） */
         updateFormat(options) {
-            var _a;
             const f = this.settings.format;
             // options.enabled 已废弃，忽略
             if (options.timestampFormat !== undefined)
-                f.timestampFormat = (_a = options.timestampFormat) !== null && _a !== void 0 ? _a : 'time';
+                f.timestampFormat = options.timestampFormat;
             if (options.formatter !== undefined)
                 f.formatter = options.formatter;
             if (options.includeStack !== undefined)
@@ -277,13 +278,18 @@
                 parts.push(this.safeStringify(entry.data));
             return parts.join(' ');
         }
-        /** 安全 JSON 序列化，处理循环引用 */
+        /** 安全 JSON 序列化，处理循环引用及 Error 对象的不可枚举属性 */
         safeStringify(obj, indent) {
             if (obj === null || typeof obj !== 'object')
                 return String(obj);
+            // Error 的 message/name/stack 均为不可枚举属性，JSON.stringify 会返回 {}
+            if (obj instanceof Error)
+                return `[${obj.name}: ${obj.message}]`;
             try {
                 const seen = new WeakSet();
                 return JSON.stringify(obj, (_key, value) => {
+                    if (value instanceof Error)
+                        return `[${value.name}: ${value.message}]`;
                     if (typeof value === 'object' && value !== null) {
                         if (seen.has(value))
                             return '[Circular]';
@@ -315,7 +321,11 @@
             this.errorHandling = {};
             this.eventHandlers = new Map();
             this.levelPriority = {
-                debug: 0, info: 1, warn: 2, error: 3, silent: 999,
+                debug: 0,
+                info: 1,
+                warn: 2,
+                error: 3,
+                silent: 999,
             };
             this.level = (_a = options.level) !== null && _a !== void 0 ? _a : 'info';
             this.name = options.name;
@@ -335,17 +345,30 @@
                 this.configureErrorHandling(options.errorHandling);
         }
         // ─── 核心日志方法 ─────────────────────────────────────────
-        debug(...args) { this.log('debug', ...args); }
-        info(...args) { this.log('info', ...args); }
-        warn(...args) { this.log('warn', ...args); }
-        error(...args) { this.log('error', ...args); }
+        debug(...args) {
+            this.log('debug', ...args);
+        }
+        info(...args) {
+            this.log('info', ...args);
+        }
+        warn(...args) {
+            this.log('warn', ...args);
+        }
+        error(...args) {
+            this.log('error', ...args);
+        }
         // ─── 等级控制 ─────────────────────────────────────────────
         setLevel(level) {
             const old = this.level;
             this.level = level;
-            this.emitEvent('levelChange', `日志等级已从 ${old} 更改为 ${level}`, { oldLevel: old, newLevel: level });
+            this.emitEvent('levelChange', `日志等级已从 ${old} 更改为 ${level}`, {
+                oldLevel: old,
+                newLevel: level,
+            });
         }
-        getLevel() { return this.level; }
+        getLevel() {
+            return this.level;
+        }
         // ─── 配置 ─────────────────────────────────────────────────
         configureFormat(options) {
             this.formatter.updateFormat(options);
@@ -360,8 +383,10 @@
                 this.setLevel(options.level);
             if (options.console !== undefined) {
                 this.consoleEnabled = (_a = options.console.enabled) !== null && _a !== void 0 ? _a : this.consoleEnabled;
-                this.formatter.settings.consoleColors = (_b = options.console.colors) !== null && _b !== void 0 ? _b : this.formatter.settings.consoleColors;
-                this.formatter.settings.consoleTimestamp = (_c = options.console.timestamp) !== null && _c !== void 0 ? _c : this.formatter.settings.consoleTimestamp;
+                this.formatter.settings.consoleColors =
+                    (_b = options.console.colors) !== null && _b !== void 0 ? _b : this.formatter.settings.consoleColors;
+                this.formatter.settings.consoleTimestamp =
+                    (_c = options.console.timestamp) !== null && _c !== void 0 ? _c : this.formatter.settings.consoleTimestamp;
             }
             if (options.format)
                 this.configureFormat(options.format);
@@ -400,7 +425,9 @@
                 try {
                     this.errorHandling.onError(error, context);
                 }
-                catch ( /* 防止递归 */_a) { /* 防止递归 */ }
+                catch (_a) {
+                    /* 防止递归 */
+                }
             }
         }
         shouldLog(level) {
@@ -425,8 +452,8 @@
                 }
             }
         }
-        createLogEntry(level, message, data) {
-            const { file, line } = this.callerInfoHelper.getCallerInfo();
+        createLogEntry(level, message, data, callerInfo) {
+            const { file, line } = callerInfo !== null && callerInfo !== void 0 ? callerInfo : {};
             const entry = {
                 level,
                 message,
@@ -445,9 +472,7 @@
             if (!this.consoleEnabled)
                 return;
             const parts = this.formatter.formatConsoleMessage(entry);
-            const fn = entry.level === 'error' ? console.error :
-                entry.level === 'warn' ? console.warn :
-                    console.log;
+            const fn = entry.level === 'error' ? console.error : entry.level === 'warn' ? console.warn : console.log;
             fn(...parts);
         }
         log(level, ...args) {
@@ -465,13 +490,18 @@
             }
             else if (args[0] instanceof Error) {
                 message = args[0].message || String(args[0]);
-                data = args.length > 1 ? { error: args[0], additionalData: args.slice(1) } : args[0];
+                data =
+                    args.length > 1
+                        ? { error: args[0], additionalData: args.length === 2 ? args[1] : args.slice(1) }
+                        : args[0];
             }
             else {
                 message = '';
                 data = args.length === 1 ? args[0] : args;
             }
-            const entry = this.createLogEntry(level, message, data);
+            const includeStack = this.formatter.settings.format.includeStack;
+            const callerInfo = includeStack ? this.callerInfoHelper.getCallerInfo() : undefined;
+            const entry = this.createLogEntry(level, message, data, callerInfo);
             this.writeToConsole(entry);
         }
     }

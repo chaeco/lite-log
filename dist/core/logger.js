@@ -13,7 +13,11 @@ class Logger {
         this.errorHandling = {};
         this.eventHandlers = new Map();
         this.levelPriority = {
-            debug: 0, info: 1, warn: 2, error: 3, silent: 999,
+            debug: 0,
+            info: 1,
+            warn: 2,
+            error: 3,
+            silent: 999,
         };
         this.level = (_a = options.level) !== null && _a !== void 0 ? _a : 'info';
         this.name = options.name;
@@ -33,17 +37,30 @@ class Logger {
             this.configureErrorHandling(options.errorHandling);
     }
     // ─── 核心日志方法 ─────────────────────────────────────────
-    debug(...args) { this.log('debug', ...args); }
-    info(...args) { this.log('info', ...args); }
-    warn(...args) { this.log('warn', ...args); }
-    error(...args) { this.log('error', ...args); }
+    debug(...args) {
+        this.log('debug', ...args);
+    }
+    info(...args) {
+        this.log('info', ...args);
+    }
+    warn(...args) {
+        this.log('warn', ...args);
+    }
+    error(...args) {
+        this.log('error', ...args);
+    }
     // ─── 等级控制 ─────────────────────────────────────────────
     setLevel(level) {
         const old = this.level;
         this.level = level;
-        this.emitEvent('levelChange', `日志等级已从 ${old} 更改为 ${level}`, { oldLevel: old, newLevel: level });
+        this.emitEvent('levelChange', `日志等级已从 ${old} 更改为 ${level}`, {
+            oldLevel: old,
+            newLevel: level,
+        });
     }
-    getLevel() { return this.level; }
+    getLevel() {
+        return this.level;
+    }
     // ─── 配置 ─────────────────────────────────────────────────
     configureFormat(options) {
         this.formatter.updateFormat(options);
@@ -58,8 +75,10 @@ class Logger {
             this.setLevel(options.level);
         if (options.console !== undefined) {
             this.consoleEnabled = (_a = options.console.enabled) !== null && _a !== void 0 ? _a : this.consoleEnabled;
-            this.formatter.settings.consoleColors = (_b = options.console.colors) !== null && _b !== void 0 ? _b : this.formatter.settings.consoleColors;
-            this.formatter.settings.consoleTimestamp = (_c = options.console.timestamp) !== null && _c !== void 0 ? _c : this.formatter.settings.consoleTimestamp;
+            this.formatter.settings.consoleColors =
+                (_b = options.console.colors) !== null && _b !== void 0 ? _b : this.formatter.settings.consoleColors;
+            this.formatter.settings.consoleTimestamp =
+                (_c = options.console.timestamp) !== null && _c !== void 0 ? _c : this.formatter.settings.consoleTimestamp;
         }
         if (options.format)
             this.configureFormat(options.format);
@@ -98,7 +117,9 @@ class Logger {
             try {
                 this.errorHandling.onError(error, context);
             }
-            catch ( /* 防止递归 */_a) { /* 防止递归 */ }
+            catch (_a) {
+                /* 防止递归 */
+            }
         }
     }
     shouldLog(level) {
@@ -123,8 +144,8 @@ class Logger {
             }
         }
     }
-    createLogEntry(level, message, data) {
-        const { file, line } = this.callerInfoHelper.getCallerInfo();
+    createLogEntry(level, message, data, callerInfo) {
+        const { file, line } = callerInfo !== null && callerInfo !== void 0 ? callerInfo : {};
         const entry = {
             level,
             message,
@@ -143,9 +164,7 @@ class Logger {
         if (!this.consoleEnabled)
             return;
         const parts = this.formatter.formatConsoleMessage(entry);
-        const fn = entry.level === 'error' ? console.error :
-            entry.level === 'warn' ? console.warn :
-                console.log;
+        const fn = entry.level === 'error' ? console.error : entry.level === 'warn' ? console.warn : console.log;
         fn(...parts);
     }
     log(level, ...args) {
@@ -163,13 +182,18 @@ class Logger {
         }
         else if (args[0] instanceof Error) {
             message = args[0].message || String(args[0]);
-            data = args.length > 1 ? { error: args[0], additionalData: args.slice(1) } : args[0];
+            data =
+                args.length > 1
+                    ? { error: args[0], additionalData: args.length === 2 ? args[1] : args.slice(1) }
+                    : args[0];
         }
         else {
             message = '';
             data = args.length === 1 ? args[0] : args;
         }
-        const entry = this.createLogEntry(level, message, data);
+        const includeStack = this.formatter.settings.format.includeStack;
+        const callerInfo = includeStack ? this.callerInfoHelper.getCallerInfo() : undefined;
+        const entry = this.createLogEntry(level, message, data, callerInfo);
         this.writeToConsole(entry);
     }
 }
