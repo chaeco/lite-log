@@ -1,6 +1,6 @@
 {
   "name": "@chaeco/lite-log",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A lightweight frontend logging library, stripped from @chaeco/logger (no filesystem)",
   "keywords": [
     "logger",
